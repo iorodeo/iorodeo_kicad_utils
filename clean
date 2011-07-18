@@ -1,0 +1,9 @@
+rm *.sch
+rm *.cmp
+rm *.net
+rm *.brd
+rm *.000
+rm *.bak
+rm *.cache.lib
+rm *.cache.dcm
+rm *~
