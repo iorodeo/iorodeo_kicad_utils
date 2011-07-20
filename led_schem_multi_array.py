@@ -1,7 +1,7 @@
 import os.path
 import time
 
-class LEDSchemArray(object):
+class LEDSchemMultiArray(object):
 
     def __init__(self, params):
         self.LEDWireOffset = 200
@@ -14,11 +14,11 @@ class LEDSchemArray(object):
         self.cacheFileName = '%s.cache'%(self.name,)
         self.ledData = {}
 
-    def getLEDPos(self):
+    def getLEDPos(self,arrayNum=0):
         ledPos = {}
         for i in range(self.numParallel):
             for j in range(self.numSeries):
-                x = self.upperLeft[0] + j*self.spacing[0]
+                x = self.upperLeft[0] + (j + arrayNum*(self.numSeries+1))*self.spacing[0]
                 y = self.upperLeft[1] + i*self.spacing[1]
                 ledPos[(i,j)] = (x,y)
         return ledPos
@@ -42,45 +42,46 @@ class LEDSchemArray(object):
         self.schFid.write('$EndSCHEMATC\n')
 
     def writeArrayWires(self):
-        ledPos = self.getLEDPos()
+        for arrayNum in range(self.numArrays):
+            ledPos = self.getLEDPos(arrayNum)
 
-        # Create stub wires on positive and negative ends of series LEDs
-        for i in range(self.numParallel):
-            # Positive stubs
-            x, y = ledPos[(i,0)]
-            x0, y0 = x-self.LEDWireOffset, y
-            x1, y1 = x0-self.stubLength, y
-            self.writeWire(x0,y0,x1,y1)
+            # Create stub wires on positive and negative ends of series LEDs
+            for i in range(self.numParallel):
+                # Positive stubs
+                x, y = ledPos[(i,0)]
+                x0, y0 = x-self.LEDWireOffset, y
+                x1, y1 = x0-self.stubLength, y
+                self.writeWire(x0,y0,x1,y1)
 
-            # Negative stubs
-            x, y = ledPos[(i,self.numSeries-1)]
-            x0, y0 = x+self.LEDWireOffset, y
-            x1, y1 = x0+self.stubLength, y
-            self.writeWire(x0,y0,x1,y1)
+                # Negative stubs
+                x, y = ledPos[(i,self.numSeries-1)]
+                x0, y0 = x+self.LEDWireOffset, y
+                x1, y1 = x0+self.stubLength, y
+                self.writeWire(x0,y0,x1,y1)
 
-        # Create connections between positive stubs
-        dx, dy = self.spacing
-        for i in range(self.numParallel):
-            x, y  = ledPos[(i,0)]
-            x0, y0 = x-self.LEDWireOffset-self.stubLength, y
-            x1, y1 = x0, y0 - dy
-            self.writeWire(x0,y0,x1,y1)
-            self.writeConnection(x0,y0)
+            # Create connections between positive stubs
+            dx, dy = self.spacing
+            for i in range(self.numParallel):
+                x, y  = ledPos[(i,0)]
+                x0, y0 = x-self.LEDWireOffset-self.stubLength, y
+                x1, y1 = x0, y0 - dy
+                self.writeWire(x0,y0,x1,y1)
+                self.writeConnection(x0,y0)
 
-        # Create connections between negative stubs
-        for i in range(self.numParallel):
-            x, y = ledPos[(i,self.numSeries-1)]
-            x0, y0 = x+self.LEDWireOffset+self.stubLength, y
-            x1, y1 = x0, y + dy
-            self.writeWire(x0,y0,x1,y1)
-            self.writeConnection(x0,y0)
+            # Create connections between negative stubs
+            for i in range(self.numParallel):
+                x, y = ledPos[(i,self.numSeries-1)]
+                x0, y0 = x+self.LEDWireOffset+self.stubLength, y
+                x1, y1 = x0, y + dy
+                self.writeWire(x0,y0,x1,y1)
+                self.writeConnection(x0,y0)
 
-        # Create connections between series LEDs
-        for i in range(self.numParallel):
-            for j in range(1,self.numSeries):
-                pos0 = ledPos[(i,j-1)]
-                pos1 = ledPos[(i,j)]
-                self.writeLEDToLEDWire(pos0, pos1)
+            # Create connections between series LEDs
+            for i in range(self.numParallel):
+                for j in range(1,self.numSeries):
+                    pos0 = ledPos[(i,j-1)]
+                    pos1 = ledPos[(i,j)]
+                    self.writeLEDToLEDWire(pos0, pos1)
 
     def writeLEDToLEDWire(self,pos0, pos1):
         """
@@ -101,16 +102,17 @@ class LEDSchemArray(object):
         self.schFid.write('Connection ~ %d %d\n'%(x,y))
 
     def writeLEDArray(self):
-        ledPos = self.getLEDPos()
-        for k,v in ledPos.iteritems():
-            i,j = k
-            x,y = v
-            self.writeLED(i,j,x,y)
+        for arrayNum in range(self.numArrays):
+            ledPos = self.getLEDPos(arrayNum)
+            for k,v in ledPos.iteritems():
+                i,j = k
+                x,y = v
+                self.writeLED(i,j,x,y,arrayNum)
 
-    def writeLED(self,i,j,x,y):
+    def writeLED(self,i,j,x,y,arrayNum=0):
         self.schFid.write('$Comp\n')
 
-        refStr = 'D%d,%d'%(i,j)
+        refStr = 'D%d,%d'%((i+arrayNum*self.numParallel),j)
         self.schFid.write('L LED %s\n'%(refStr,))
 
         timeStamp = hex(int(time.time()))[2:]
@@ -178,6 +180,7 @@ if __name__ == '__main__':
 
     params = {
             'name'              : 'ledarray',
+            'numArrays'         : 2,
             'numSeries'         : 6,
             'numParallel'       : 48,
             'upperLeft'         : (2500,1000),
@@ -188,5 +191,5 @@ if __name__ == '__main__':
             'module'            : 'LED_OVLG',
             }
 
-    ledSchemArray = LEDSchemArray(params)
-    ledSchemArray.write()
+    ledSchemMultiArray = LEDSchemMultiArray(params)
+    ledSchemMultiArray.write()
