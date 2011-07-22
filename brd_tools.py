@@ -1,3 +1,20 @@
+"""
+Copyright 2010  IO Rodeo Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+from __future__ import division
+import sys
 
 class ComponentPlacer(object):
 
@@ -8,10 +25,10 @@ class ComponentPlacer(object):
         self.filename = filename
         self.lines = self.readFile()
         self.moduleDict = self.getModuleDict()
-        
+
     def readFile(self):
         """
-        Read the file and return a list of all lines. 
+        Read the file and return a list of all lines.
         """
         with open(self.filename,'r') as fid:
             lines = fid.readlines()
@@ -56,7 +73,7 @@ class ComponentPlacer(object):
         moduleLines = self.moduleDict[name]
         posFound = False
         for moduleIndex, lineData in enumerate(moduleLines):
-            linesIndex, line = lineData 
+            linesIndex, line = lineData
             splitLine = line.split()
             if splitLine[0] == 'Po' and len(splitLine) > 3:
                 splitLine[1] = '%d'%(round(10000*x),)
@@ -77,7 +94,7 @@ class ComponentPlacer(object):
 
     def write(self,filename=None):
         """
-        Write new .brd file. If filename argument is not specified the 
+        Write new .brd file. If filename argument is not specified the
         same name as the original file will be used.
         """
         if filename is None:
@@ -87,31 +104,58 @@ class ComponentPlacer(object):
                 fid.write(line)
 
     def printLines(self):
-        """ 
+        """
         Prints all lines in the file.
         """
         for i, line in enumerate(self.lines):
             print i, line
-                
+
 
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
+    # xNum = 11
+    # yNum = 15
+    # xStart = 1.0
+    # yStart = 1.0
+    # xStep = 0.3691
+    # yStep = 0.3691
 
-    xNum = 11 
-    yNum = 15 
-    xStart = 1.0
-    yStart = 1.0
-    xStep = 0.3
-    yStep = 0.3
+    # placer = ComponentPlacer('ledarray.brd')
+    # for i in range(0,xNum):
+    #     for j in range(0,yNum):
+    #         name = 'D%d,%d'%(j,i)
+    #         x = xStart + i*xStep
+    #         y = yStart + j*yStep
+    #         ang = 0
+    #         placer.setModulePos(name,x,y,ang)
+    # placer.write()
 
-    placer = ComponentPlacer('ledarray.brd')
-    for i in range(0,xNum):
-        for j in range(0,yNum):
-            name = 'D%d,%d'%(j,i)
-            x = xStart + i*xStep
-            y = yStart + j*yStep
-            ang = 0
-            placer.setModulePos(name,x,y,ang)
+
+    board_filename = sys.argv[1]
+    print "Placing components in %s" % (board_filename,)
+
+    xNum_input = 6
+    yNum_input = 96
+    xNum_output = 24
+    yNum_output = 24
+    xStep = 0.3691
+    yStep = 0.3691
+    xCenter = (xNum_output - 1)/2 * xStep
+    yCenter = (yNum_output - 1)/2 * yStep
+    xStart = int(10.0 + xCenter) - xCenter
+    yStart = int(10.0 + yCenter) - yCenter
+
+    placer = ComponentPlacer(board_filename)
+    for h in range(0,int(xNum_output/xNum_input)):
+        xLow = h*xNum_input
+        xHigh = xLow + xNum_input
+        for i in range(xLow,xHigh):
+            for j in range(0,yNum_output):
+                name0 = j + h*yNum_output
+                name1 = i - h*xNum_input
+                name = 'D%d,%d'%(name0,name1)
+                x = xStart + i*xStep
+                y = yStart + j*yStep
+                ang = 0
+                placer.setModulePos(name,x,y,ang)
     placer.write()
-
-

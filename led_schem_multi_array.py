@@ -1,3 +1,19 @@
+"""
+Copyright 2010  IO Rodeo Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+from __future__ import division
 import os.path
 import time
 
@@ -30,6 +46,7 @@ class LEDSchemMultiArray(object):
     def writeSchFile(self):
         with open(self.schFileName,'w') as self.schFid:
             self.writeHeader()
+            self.writeLabels()
             self.writeArrayWires()
             self.writeLEDArray()
             self.writeFooter()
@@ -40,6 +57,9 @@ class LEDSchemMultiArray(object):
 
     def writeFooter(self):
         self.schFid.write('$EndSCHEMATC\n')
+
+    def writeLabels(self):
+        pass
 
     def writeArrayWires(self):
         for arrayNum in range(self.numArrays):
@@ -103,11 +123,40 @@ class LEDSchemMultiArray(object):
 
     def writeLEDArray(self):
         for arrayNum in range(self.numArrays):
+            self.writeLEDConn(arrayNum)
             ledPos = self.getLEDPos(arrayNum)
             for k,v in ledPos.iteritems():
                 i,j = k
                 x,y = v
                 self.writeLED(i,j,x,y,arrayNum)
+
+    def writeLEDConn(self,arrayNum=0):
+        self.schFid.write('$Comp\n')
+
+        refStr = 'P' + str(arrayNum)
+        self.schFid.write('L CONN_2 %s\n'%(refStr,))
+
+        timeStamp = hex(int(time.time()))[2:]
+        timeStamp = timeStamp.upper()
+        self.schFid.write('U 1 1 %s\n'%(timeStamp,))
+
+        x = self.upperLeft[0] - 1000
+        y = self.upperLeft[1] + 1000*arrayNum
+
+        self.schFid.write('P %d %d\n'%(x,y))
+
+        annotationX = x - 50
+        annotationY = y
+        self.schFid.write('F 0 "%s" V %d %d  40 0000 C CNN\n'%(refStr,annotationX, annotationY))
+
+        valueStr = 'LED_CONN'
+        valueX = x + 50
+        valueY = y
+        self.schFid.write('F 1 "%s" V %d %d  40 0000 C CNN\n'%(valueStr,valueX, valueY))
+        self.schFid.write('\t1    %d %d\n'%(x,y))
+        self.schFid.write('\t1    0    0    -1\n')
+
+        self.schFid.write('$EndComp\n')
 
     def writeLED(self,i,j,x,y,arrayNum=0):
         self.schFid.write('$Comp\n')
@@ -135,7 +184,7 @@ class LEDSchemMultiArray(object):
         self.schFid.write('$EndComp\n')
 
         # Save info for writing .cmp file
-        self.ledData[(i,j)] = {
+        self.ledData[(i,j,arrayNum)] = {
                 'reference' : refStr,
                 'timeStamp' : timeStamp,
                 'value'     : valueStr,
@@ -146,15 +195,23 @@ class LEDSchemMultiArray(object):
         with open(self.cmpFileName,'w') as cmpFid:
             # Write header - need to modify so that the date string is correct
             cmpFid.write('Cmp-Mod V01 Created by CVpcb (20090216-final) date = Thu 14 Jul 2011 05:35:17 PM PDT\n\n')
-            for i in range(self.numParallel):
-                for j in range(self.numSeries):
-                    data = self.ledData[(i,j)]
-                    cmpFid.write('BeginCmp\n')
-                    cmpFid.write('TimeStamp = /%s;\n'%(data['timeStamp'],))
-                    cmpFid.write('Reference = %s;\n'%(data['reference'],))
-                    cmpFid.write('ValuerCmp = %s;\n'%(data['value'],))
-                    cmpFid.write('IdModule  = %s;\n'%(data['module'],))
-                    cmpFid.write('EndCmp\n\n')
+            for arrayNum in range(self.numArrays):
+                data = self.ledData[(0,0,0)]
+                cmpFid.write('BeginCmp\n')
+                cmpFid.write('TimeStamp = /%s;\n'%(data['timeStamp'],))
+                cmpFid.write('Reference = %s;\n'%('P'+str(arrayNum),))
+                cmpFid.write('ValuerCmp = %s;\n'%('LED_CONN',))
+                cmpFid.write('IdModule  = %s;\n'%('DCJACK_2PIN_HIGHCURRENT',))
+                cmpFid.write('EndCmp\n\n')
+                for i in range(self.numParallel):
+                    for j in range(self.numSeries):
+                        data = self.ledData[(i,j,arrayNum)]
+                        cmpFid.write('BeginCmp\n')
+                        cmpFid.write('TimeStamp = /%s;\n'%(data['timeStamp'],))
+                        cmpFid.write('Reference = %s;\n'%(data['reference'],))
+                        cmpFid.write('ValuerCmp = %s;\n'%(data['value'],))
+                        cmpFid.write('IdModule  = %s;\n'%(data['module'],))
+                        cmpFid.write('EndCmp\n\n')
             cmpFid.write('EndListe\n')
 
 
@@ -162,7 +219,7 @@ HEADER_TEMPLATE = """EESchema Schematic File Version 2  date Thu 14 Jul 2011 12:
 LIBS:power,device,transistors,conn,linear,regul,74xx,cmos4000,adc-dac,memory,xilinx,special,microcontrollers,dsp,microchip,analog_switches,motorola,texas,intel,audio,interface,digital-audio,philips,display,cypress,siliconi,opto,atmel,contrib,valves,./CACHEFILE_MARKER
 EELAYER 24  0
 EELAYER END
-$Descr A4 11700 8267
+$Descr E 44000 34000
 Sheet 1 1
 Title ""
 Date "14 jul 2011"
