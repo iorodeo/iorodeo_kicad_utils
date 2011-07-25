@@ -134,16 +134,24 @@ if __name__ == '__main__':
     board_filename = sys.argv[1]
     print "Placing components in %s" % (board_filename,)
 
-    xNum_input = 6
-    yNum_input = 96
-    xNum_output = 24
-    yNum_output = 24
+    # xNum_input = 6
+    # yNum_input = 96
+    # xNum_output = 24
+    # yNum_output = 24
+    xNum_input = 4
+    yNum_input = 4
+    xNum_output = 4
+    yNum_output = 4
     xStep = 0.3691
     yStep = 0.3691
+    # xCornerRough = 10.0
+    # yCornerRough = 10.0
+    xCornerRough = 5.0
+    yCornerRough = 5.0
     xCenter = (xNum_output - 1)/2 * xStep
     yCenter = (yNum_output - 1)/2 * yStep
-    xStart = int(10.0 + xCenter) - xCenter
-    yStart = int(10.0 + yCenter) - yCenter
+    xStart = int(xCornerRough + xCenter) - xCenter
+    yStart = int(yCornerRough + yCenter) - yCenter
 
     placer = ComponentPlacer(board_filename)
     for h in range(0,int(xNum_output/xNum_input)):

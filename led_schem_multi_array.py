@@ -237,9 +237,12 @@ if __name__ == '__main__':
 
     params = {
             'name'              : 'ledarray',
-            'numArrays'         : 2,
-            'numSeries'         : 6,
-            'numParallel'       : 48,
+            # 'numArrays'         : 2,
+            # 'numSeries'         : 6,
+            # 'numParallel'       : 48,
+            'numArrays'         : 1,
+            'numSeries'         : 4,
+            'numParallel'       : 4,
             'upperLeft'         : (2500,1000),
             'spacing'           : (600,400),
             'annotationOffset'  : (0,-100),
