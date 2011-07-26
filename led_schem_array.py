@@ -194,14 +194,14 @@ if __name__ == '__main__':
 
     params = {
             'name'              : 'ledarray',
-            'numSeries'         : 6,
-            'numParallel'       : 48,
-            'upperLeft'         : (2500,1000),
+            'numSeries'         : 20,
+            'numParallel'       : 1,
+            'upperLeft'         : (2500,2000),
             'spacing'           : (600,400),
             'annotationOffset'  : (0,-100),
             'labelOffset'       : (0,100),
             'stubLength'        : 300,
-            'module'            : 'LED_OVLG',
+            'module'            : 'VSMG3700',
             }
 
     ledSchemArray = LEDSchemArray(params)

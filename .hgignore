@@ -1,6 +1,9 @@
 syntax: glob
 *.pyc
 *~
+*.000
+*.pos
+*.brd
 *.o
 *.egg-info
 *.swp
@@ -10,6 +13,7 @@ syntax: glob
 *.dxf
 *.komodo*
 *.egg-info
+*.mod
 .DS_Store
 build
 dist
